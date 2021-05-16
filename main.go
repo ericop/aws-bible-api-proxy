@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -16,11 +17,10 @@ import (
 type Request struct {
 	UrlText string `json:"urlText"`
 	Code    string `json:"code"`
-	// header x-api-key =
-	// X-API-Key:eAamcrnwum9yI7J9lDPYp3zLnDrBoqLcaLKBDDjc
+	// header X-API-Key: eAamcrnwum9yI7J9lDPYp3zLnDrBoqLcaLKBDDjc
+	// header x-api-key: Genesis1-2InTheBeginningGodCreated
 }
 
-type RawString string
 type Response struct {
 	Message []BibleVerse `json:"message"`
 	Ok      bool         `json:"ok"`
@@ -37,21 +37,31 @@ type BibleVerse struct {
 	Paragraph_number string `json:"paragraph_number"`
 }
 
-// MarshalJSON returns *m as the JSON encoding of m.
-func (m *RawString) MarshalJSON() ([]byte, error) {
-	return []byte(*m), nil
+type BibleAudioLocation struct {
+	Server    string `json:"server"`
+	Root_path string `json:"root_path"`
+	Protocol  string `json:"protocol"`
+	CDN       string `json:"CDN"`
+	Priority  string `json:"priority"`
 }
 
-// UnmarshalJSON sets *m to a copy of data.
-func (m *RawString) UnmarshalJSON(data []byte) error {
-	if m == nil {
-		return errors.New("RawString: UnmarshalJSON on nil pointer")
+type BibleAudioPath struct {
+	Book_id    string `json:"book_id"`
+	Chapter_id string `json:"chapter_id"`
+	Path       string `json:"path"`
+}
+
+func Handler(request Request) (interface{}, error) {
+
+	encodedCode := request.Code
+	decodedCode, err := url.QueryUnescape(encodedCode)
+	if err != nil {
+		log.Fatal(err)
 	}
-	*m += RawString(data)
-	return nil
-}
 
-func Handler(request Request) (Response, error) {
+	if decodedCode != "1nTh3B3g1nn1ngG0dCr34t3d" {
+		return "invalid access code", errors.New("invalid access code")
+	}
 
 	encodedUrlText := request.UrlText
 	decodedUrlText, err := url.QueryUnescape(encodedUrlText)
@@ -59,10 +69,13 @@ func Handler(request Request) (Response, error) {
 		log.Fatal(err)
 	}
 
+	isBibleTextRequest := strings.Contains(decodedUrlText, "/text/verse")
+	isAudioLocationRequest := strings.Contains(decodedUrlText, "/audio/location")
+	//isAudioPathRequest := strings.Contains(decodedUrlText, "/audio/path")
+
 	apiKey := "5b50f7439b939d9f4faa4bf81e0c8f46"
 	urlToCall := fmt.Sprintf("%v&key=%v", decodedUrlText, apiKey)
-
-	log.Printf("urlToCall:%v", urlToCall)
+	//log.Printf("urlToCall:%v", urlToCall)
 
 	bibleClient := http.Client{
 		Timeout: time.Second * 15, // timeout after 15 seconds
@@ -86,49 +99,31 @@ func Handler(request Request) (Response, error) {
 	}
 
 	body, readErr := ioutil.ReadAll(res.Body)
-	// [{
-	// 	"book_name": "Matthew",
-	// 	"book_id": "Matt",
-	// 	"book_order": "55",
-	// 	"chapter_id": "2",
-	// 	"chapter_title": "Chapter 2",
-	// 	"verse_id": "13",
-	// 	"verse_text": "Now when they had departed, behold, an angel of the Lord appeared to Joseph in a dream and said, “Rise, take the child and his mother, and flee to Egypt, and remain there until I tell you, for Herod is about to search for the child, to destroy him.” \n\t\t\t",
-	// 	"paragraph_number": "2"
-	//   }]
+
 	if readErr != nil {
 		log.Fatal(readErr)
 	}
+	//log.Printf("body from bible Api:", body)
 
-	var bibleVerses []BibleVerse
+	if isBibleTextRequest {
+		var bibleVerses []BibleVerse
+		json.Unmarshal([]byte(body), &bibleVerses)
 
-	json.Unmarshal([]byte(body), &bibleVerses)
+		return bibleVerses, nil
+	}
 
-	// string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-	// dynamic data = JsonConvert.DeserializeObject(requestBody);
-	// urlText = urlText ?? data?.urlText;
-	// urlText = string.IsNullOrWhiteSpace(urlText) ? "http://dbt.io/library/volume?language_code=ENG&v=2" : urlText;
-	// var urlToCall = $"{urlText}&key={apiKey}";
-	// Console.WriteLine($"data was '{data}'");
-	// Console.WriteLine($"urlText was '{urlText}'");
-	// Console.WriteLine($"urlToCall was '{urlToCall}'");
+	if isAudioLocationRequest {
+		var audioLocations []BibleAudioLocation
+		json.Unmarshal([]byte(body), &audioLocations)
 
-	// var resp = Task.Run(() => client.GetStringAsync(urlToCall));
-	// var respText = resp.GetAwaiter().GetResult();
-	// var asJson = JsonConvert.DeserializeObject(respText);
-	// var response = new OkObjectResult(asJson);
+		return audioLocations, nil
+	}
 
-	// response.ContentTypes.Add("application/json");
-	// return respText != null
-	// 	 ? (ActionResult)response
-	// 	 : new BadRequestObjectResult("Please pass a `url` on the query string or in the request body");
+	var audioPaths []BibleAudioPath
+	json.Unmarshal([]byte(body), &audioPaths)
 
-	log.Printf("body from bible Api:", body)
-	return Response{
-		Message: bibleVerses,
-		//Message: fmt.Sprintf("You sent urlText: `%v`, code: `%v`", request.UrlText, request.Code),
-		Ok: true,
-	}, nil
+	return audioPaths, nil
+
 }
 
 func main() {
