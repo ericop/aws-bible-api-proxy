@@ -15,17 +15,11 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-// type Event struct {
-// 	IsBase64Encoded   bool    `json:"isBase64Encoded"`
-// 	StatusCode        string  `json:"statusCode"`
-// 	Headers           string  `json:"headers"`
-// 	MultiValueHeaders string  `json:"multiValueHeaders"`
-// 	Body              Request `json:"body"`
-// }
-
 type RequestBody struct {
 	UrlText string `json:"urlText"`
-	Code    string `json:"code"`
+	//Code    string `json:"code"`
+	//urlText=https%3A%2F%2Fdbt.io%2Ftext%2Fverse%3Freply%3Djson%26v%3D2%26dam_id%3DENGESVN1ET%26book_id%3DActs%26chapter_id%3D2%26verse_start%3D22%26verse_end%3D47&code=1nTh3B3g1nn1ngG0dCr34t3d
+	//urlText=https%3A%2F%2Fdbt.io%2Faudio%2Fpath%3Fdam_id%3DENGESVN1DA%26book_id%3DActs%26v%3D2%26chapter_id%3D4&code=1nTh3B3g1nn1ngG0dCr34t3d
 	// header X-API-Key: eAamcrnwum9yI7J9lDPYp3zLnDrBoqLcaLKBDDjc
 	// header x-api-key: Genesis1-2InTheBeginningGodCreated
 }
@@ -60,29 +54,19 @@ type BibleAudioPath struct {
 	Path       string `json:"path"`
 }
 
-func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	log.Printf("EVENT  =>`%v`", request)
-	log.Printf("BODY  =>`%v`", request.Body)
-	log.Printf("BODY as []byte =>`%v`", []byte(request.Body))
-	log.Printf("HEADERS  =>`%v`", request.Headers)
-	log.Printf("IsBase64Encoded  =>`%v`", request.IsBase64Encoded)
+func Handler(ctx context.Context, requestBody RequestBody) (interface{}, error) {
+	//log.Printf("ctx  =>`%v`", ctx)
+	//log.Printf("typesIn requestBody  =>`%v`", requestBody)
 
-	var requestBody RequestBody
+	// encodedCode := requestBody.Code
+	// decodedCode, err := url.QueryUnescape(encodedCode)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	err := json.Unmarshal([]byte(request.Body), &requestBody)
-	if err != nil {
-		log.Fatal("Unmarshal request.Body failed", err)
-	}
-
-	encodedCode := requestBody.Code
-	decodedCode, err := url.QueryUnescape(encodedCode)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if decodedCode != "1nTh3B3g1nn1ngG0dCr34t3d" {
-		return events.APIGatewayProxyResponse{Body: "invalid access code", StatusCode: 401}, nil
-	}
+	// if decodedCode != "1nTh3B3g1nn1ngG0dCr34t3d" {
+	// 	return events.APIGatewayProxyResponse{Body: "invalid access code", StatusCode: 401}, nil
+	// }
 
 	encodedUrlText := requestBody.UrlText
 	decodedUrlText, err := url.QueryUnescape(encodedUrlText)
@@ -159,5 +143,5 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 }
 
 func main() {
-	lambda.Start(HandleRequest)
+	lambda.Start(Handler)
 }
