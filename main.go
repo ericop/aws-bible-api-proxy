@@ -59,9 +59,8 @@ func Handler(requestBody RequestBody) (interface{}, error) {
 	isBibleTextRequest := strings.Contains(decodedUrlText, "/text/verse")
 	isAudioLocationRequest := strings.Contains(decodedUrlText, "/audio/location")
 
-	apiKey := "5b50f7439b939d9f4faa4bf81e0c8f46"
-	urlToCall := fmt.Sprintf("%v&key=%v", decodedUrlText, apiKey)
-	//log.Printf("urlToCall:%v", urlToCall)
+	thirdPartyBibleApiKey := "5b50f7439b939d9f4faa4bf81e0c8f46"
+	urlToCall := fmt.Sprintf("%v&key=%v", decodedUrlText, thirdPartyBibleApiKey)
 
 	bibleClient := http.Client{
 		Timeout: time.Second * 15, // timeout after 15 seconds
