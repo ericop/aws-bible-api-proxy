@@ -1,8 +1,8 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -11,10 +11,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-type Request struct {
+// type Event struct {
+// 	IsBase64Encoded   bool    `json:"isBase64Encoded"`
+// 	StatusCode        string  `json:"statusCode"`
+// 	Headers           string  `json:"headers"`
+// 	MultiValueHeaders string  `json:"multiValueHeaders"`
+// 	Body              Request `json:"body"`
+// }
+
+type RequestBody struct {
 	UrlText string `json:"urlText"`
 	Code    string `json:"code"`
 	// header X-API-Key: eAamcrnwum9yI7J9lDPYp3zLnDrBoqLcaLKBDDjc
@@ -51,19 +60,31 @@ type BibleAudioPath struct {
 	Path       string `json:"path"`
 }
 
-func Handler(request Request) (interface{}, error) {
+func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	log.Printf("EVENT  =>`%v`", request)
+	log.Printf("BODY  =>`%v`", request.Body)
+	log.Printf("BODY as []byte =>`%v`", []byte(request.Body))
+	log.Printf("HEADERS  =>`%v`", request.Headers)
+	log.Printf("IsBase64Encoded  =>`%v`", request.IsBase64Encoded)
 
-	encodedCode := request.Code
+	var requestBody RequestBody
+
+	err := json.Unmarshal([]byte(request.Body), &requestBody)
+	if err != nil {
+		log.Fatal("Unmarshal request.Body failed", err)
+	}
+
+	encodedCode := requestBody.Code
 	decodedCode, err := url.QueryUnescape(encodedCode)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if decodedCode != "1nTh3B3g1nn1ngG0dCr34t3d" {
-		return "invalid access code", errors.New("invalid access code")
+		return events.APIGatewayProxyResponse{Body: "invalid access code", StatusCode: 401}, nil
 	}
 
-	encodedUrlText := request.UrlText
+	encodedUrlText := requestBody.UrlText
 	decodedUrlText, err := url.QueryUnescape(encodedUrlText)
 	if err != nil {
 		log.Fatal(err)
@@ -108,24 +129,35 @@ func Handler(request Request) (interface{}, error) {
 	if isBibleTextRequest {
 		var bibleVerses []BibleVerse
 		json.Unmarshal([]byte(body), &bibleVerses)
-
-		return bibleVerses, nil
+		bibleVersesString, err := json.Marshal(bibleVerses)
+		if err != nil {
+			log.Fatalf("Error occurred during bibleVerses marshaling. Error: %s", err.Error())
+		}
+		return events.APIGatewayProxyResponse{Body: string(bibleVersesString), StatusCode: 200}, nil
 	}
 
 	if isAudioLocationRequest {
 		var audioLocations []BibleAudioLocation
 		json.Unmarshal([]byte(body), &audioLocations)
 
-		return audioLocations, nil
+		audioLocationsString, err := json.Marshal(audioLocations)
+		if err != nil {
+			log.Fatalf("Error occurred during audioLocations marshaling. Error: %s", err.Error())
+		}
+		return events.APIGatewayProxyResponse{Body: string(audioLocationsString), StatusCode: 200}, nil
 	}
 
 	var audioPaths []BibleAudioPath
 	json.Unmarshal([]byte(body), &audioPaths)
 
-	return audioPaths, nil
+	audioPathsString, err := json.Marshal(audioPaths)
+	if err != nil {
+		log.Fatalf("Error occurred during audioPaths marshaling. Error: %s", err.Error())
+	}
+	return events.APIGatewayProxyResponse{Body: string(audioPathsString), StatusCode: 200}, nil
 
 }
 
 func main() {
-	lambda.Start(Handler)
+	lambda.Start(HandleRequest)
 }
