@@ -24,5 +24,5 @@ Go on AWS Lambda for BibleScout.App
     - value: `Genesis1-2InTheBeginningGodCreated` or `eAamcrnwum9yI7J9lDPYp3zLnDrBoqLcaLKBDDjc`
 
 ## Roadmap
-[x] Create json response in AWS lambda to replace Azure function app
-[ ] Create mp3 gathering endpoint
+- [x] Create json response in AWS lambda to replace Azure function app
+- [ ] Create mp3 gathering endpoint
