@@ -9,7 +9,7 @@ Go on AWS Lambda for BibleScout.App
 1. Generally follow https://docs.aws.amazon.com/lambda/latest/dg/golang-package.html#golang-package-windows
 2. Upload the `.zip` file on https://us-east-2.console.aws.amazon.com/lambda/home?region=us-east-2#/functions/bible-scout-proxy?tab=code
 3. Test it at https://us-east-2.console.aws.amazon.com/lambda/home?region=us-east-2#/functions/bible-scout-proxy?tab=testing
-  - **NOTE:** Sometimes it takes a few minutes for the new code to be the being tested, there is some kind of caching here
+    > ℹ **NOTE:** Sometimes it takes a few minutes for the new code to be the code being tested, there is some kind of caching here
 4. If testing works (or you want to test with the API Gateway semi integrated) go to https://us-east-2.console.aws.amazon.com/apigateway/home?region=us-east-2#/apis/dcu73qiiyi/resources/ovj0he/methods/GET and chose the **Client "Test ⚡"** and enter the following in the **Query String**
 
    ```
